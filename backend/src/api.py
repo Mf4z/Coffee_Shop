@@ -96,7 +96,7 @@ def create_drink(payload):
 
         return jsonify({
             'success': True,
-            'drinks': [drink.long]
+            'drinks': [drink.long()]
         })
 
     except:
