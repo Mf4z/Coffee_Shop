@@ -1,5 +1,6 @@
 from crypt import methods
 import os
+import re
 from flask import Flask, request, jsonify, abort
 from sqlalchemy import exc
 import json
@@ -34,13 +35,10 @@ CORS(app)
 def drinks(payload):
     try:
         drink_records = Drink.query.all()
-        # print(drink_records)
         drinks = [drink.short() for drink in drink_records]
-        # print(drinks)
-        # print(drink_records, 'Drinks Formatted')
     except:
         abort(404)
-    
+
     return jsonify({
         'success': True,
         'drinks': drinks
@@ -81,14 +79,13 @@ def drinks_detail(payload):
 @requires_auth('post:drinks')
 def create_drink(payload):
     try:
-        # new_drink = [{'id': 1, 'title': 'water', 'recipe': ]
-        # [{'color': string, 'name':string, 'parts':number}]
-        recipe = [{'color': 'brown','name': 'tea', 'parts': 2}]
-        print(recipe)
-        new_drink = Drink(title='tea', recipe=json.loads(recipe))
-        print(new_drink)
-        new_drink.insert()
+        body = request.get_json()
+        title=body.get('title')
+        recipe=json.dumps(body.get('recipe'))
+        drink = Drink(title=title,recipe=recipe)
 
+        drink.insert()
+        
         drink_records = Drink.query.all()
         drinks = [drink.long() for drink in drink_records]
 
@@ -115,7 +112,32 @@ def create_drink(payload):
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<id>', methods=['PATCH'])
+@requires_auth('patch:drinks')
+def update_drink(payload,id):
+    try:
+        body = request.get_json()
+        title = body.get('title')
+        drink = Drink.query.filter(Drink.id == id).one_or_none()
 
+        if drink is None:
+            abort(404)
+        
+        drink.title = title
+        drink.update()
+
+        return jsonify({
+            'success': True,
+            'drinks': drink.long()
+        })
+
+    except:
+        db.session.rollback()
+        abort(405)
+    
+    finally:
+        db.session.close()
+    
 
 '''
 @TODO implement endpoint
@@ -127,6 +149,28 @@ def create_drink(payload):
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<id>', methods=['DELETE'])
+@requires_auth('delete:drinks')
+def delete_drink(payload,id):
+    try:        
+        drink = Drink.query.filter(Drink.id == id).one_or_none()
+
+        if drink is None:
+            abort(404)
+        
+        drink.delete()
+
+        return {
+            'success': True,
+            'deleted': id,
+        }
+
+    except:
+        db.session.rollback()
+        abort(422)
+        
+    finally:
+        db.session.close()
 
 
 # Error Handling
@@ -168,14 +212,22 @@ def not_found(error):
         "message": "resource not found"
     }), 404
 
+@app.errorhandler(405)
+def not_allowed(error):
+    return jsonify({
+        'success': False,
+        'error': 405,
+        'message': 'method not allowed'
+    }), 405
+
 '''
 @TODO implement error handler for AuthError
     error handler should conform to general task above
 '''
-@app.errorhandler(AuthError)
+@app.errorhandler(401)
 def auth_error(error):
-    return jsonify({
-         "success": False,
-        "error": 401,
-        "message": "authentication error"
-    }), 401
+    raise AuthError({
+        'success': False,
+        'error': 401,
+        'message': 'unauthorised'}
+        , 401)
