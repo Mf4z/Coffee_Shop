@@ -5,10 +5,9 @@ from jose import jwt
 from urllib.request import urlopen
 
 
-# AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
+
 AUTH0_DOMAIN = 'dev-0xnhnu-q.us.auth0.com'
 ALGORITHMS = ['RS256']
-# API_AUDIENCE = 'dev'
 API_AUDIENCE = 'coffeeshopapi'
 
 ## AuthError Exception
@@ -68,7 +67,6 @@ def get_token_auth_header():
     # Pick the token
     token = parts[1]
     return token
-#    raise Exception('Not Implemented')
 
 '''
 @TODO implement check_permissions(permission, payload) method
@@ -94,7 +92,6 @@ def check_permissions(permission, payload):
             'description': 'Permission not found.'
         }, 403)
     return True
-    # raise Exception('Not Implemented')
 
 '''
 @TODO implement verify_decode_jwt(token) method
@@ -163,7 +160,6 @@ def verify_decode_jwt(token):
                 'code': 'invalid_header',
                 'description': 'Unable to find the appropriate key.'
             }, 400)
-    # raise Exception('Not Implemented')
 
 '''
 @TODO implement @requires_auth(permission) decorator method
